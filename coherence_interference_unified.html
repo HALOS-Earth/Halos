@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coherence — Interference Pattern</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --color-background-primary: #ffffff;
+    --color-background-secondary: #f5f4ef;
+    --color-background-tertiary: #efede6;
+    --color-text-primary: #1a1a18;
+    --color-text-secondary: #5f5e5a;
+    --color-text-tertiary: #888780;
+    --color-border-tertiary: rgba(0,0,0,0.12);
+    --color-border-secondary: rgba(0,0,0,0.22);
+    --color-border-primary: rgba(0,0,0,0.35);
+    --font-sans: system-ui, -apple-system, sans-serif;
+    --border-radius-md: 8px;
+    --border-radius-lg: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-background-primary: #1e1d1b;
+      --color-background-secondary: #252420;
+      --color-background-tertiary: #2c2b28;
+      --color-text-primary: #e8e6df;
+      --color-text-secondary: #a8a69f;
+      --color-text-tertiary: #6e6c66;
+      --color-border-tertiary: rgba(255,255,255,0.1);
+      --color-border-secondary: rgba(255,255,255,0.2);
+      --color-border-primary: rgba(255,255,255,0.35);
+    }
+  }
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-background-tertiary);
+    color: var(--color-text-primary);
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 2rem 1rem;
+  }
+  .card {
+    background: var(--color-background-primary);
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-lg);
+    padding: 1.5rem;
+    width: 100%;
+    max-width: 720px;
+  }
+  h1 {
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    margin-bottom: 4px;
+  }
+  .subtitle {
+    font-size: 13px;
+    color: var(--color-text-tertiary);
+    margin-bottom: 16px;
+  }
+  canvas { display: block; width: 100%; }
+  .domain-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0 12px; }
+  .domain-card {
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-md);
+    padding: 10px 14px;
+    background: var(--color-background-secondary);
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .domain-card:hover { background: var(--color-background-primary); }
+  .domain-label { font-size: 12px; font-weight: 500; margin-bottom: 2px; }
+  .domain-insight { font-size: 11px; color: var(--color-text-tertiary); line-height: 1.4; }
+  .active-card { border-color: var(--color-border-primary) !important; background: var(--color-background-primary) !important; }
+  .ctrl-row { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--color-text-secondary); }
+  .controls { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin-bottom: 10px; }
+  input[type=range] { accent-color: var(--color-text-secondary); cursor: pointer; }
+  .meter-row { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--color-text-secondary); margin-bottom: 4px; }
+  .meter-track { flex: 1; height: 6px; background: var(--color-border-tertiary); border-radius: 3px; overflow: hidden; }
+  .meter-fill { height: 100%; width: 100%; background: #185FA5; border-radius: 3px; transition: width .3s, background .3s; }
+  .meter-val { min-width: 36px; font-weight: 500; color: var(--color-text-primary); }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Coherence</h1>
+  <p class="subtitle">The interference pattern — and what it means across every domain</p>
+
+  <canvas id="cv" height="260"></canvas>
+
+  <div class="domain-grid">
+    <div class="domain-card active-card" id="card-physics" onclick="setDomain('physics')">
+      <div class="domain-label" style="color:#185FA5">Physics</div>
+      <div class="domain-insight">Waves phase-locked → constructive peaks. Out of phase → cancellation. The pattern <em>is</em> the coherence.</div>
+    </div>
+    <div class="domain-card" id="card-logic" onclick="setDomain('logic')">
+      <div class="domain-label" style="color:#534AB7">Logic</div>
+      <div class="domain-insight">Beliefs reinforce when they share a phase — same assumptions, same direction. Contradiction = destructive interference.</div>
+    </div>
+    <div class="domain-card" id="card-biology" onclick="setDomain('biology')">
+      <div class="domain-label" style="color:#0F6E56">Biology</div>
+      <div class="domain-insight">Organs, signals, cells — each a wave of activity that must stay locked to the body's rhythm or cancel it out.</div>
+    </div>
+    <div class="domain-card" id="card-self" onclick="setDomain('self')">
+      <div class="domain-label" style="color:#993C1D">Self</div>
+      <div class="domain-insight">Values, actions, memory — when they reinforce each other across time, a self coheres. When they contradict: fragmentation.</div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="ctrl-row">
+      <span>Phase offset</span>
+      <input type="range" id="phase" min="0" max="314" value="0" step="1" style="width:110px">
+      <span id="phase-out" style="min-width:80px">0° (locked)</span>
+    </div>
+    <div class="ctrl-row">
+      <span>Frequency ratio</span>
+      <input type="range" id="freq" min="80" max="160" value="100" step="1" style="width:100px">
+      <span id="freq-out" style="min-width:28px">1.0×</span>
+    </div>
+    <div class="ctrl-row">
+      <span>Noise</span>
+      <input type="range" id="noise" min="0" max="60" value="0" step="1" style="width:90px">
+      <span id="noise-out" style="min-width:22px">0</span>
+    </div>
+  </div>
+
+  <div class="meter-row">
+    <span>Coherence:</span>
+    <div class="meter-track"><div class="meter-fill" id="cbar"></div></div>
+    <span class="meter-val" id="cval">100%</span>
+  </div>
+</div>
+
+<script>
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const W = 680, H = 260;
+cv.width = W; cv.height = H;
+
+const domains = {
+  physics: { color1: '#185FA5', color2: '#378ADD', resultColor: '#0C447C' },
+  logic:   { color1: '#534AB7', color2: '#7F77DD', resultColor: '#3C3489' },
+  biology: { color1: '#0F6E56', color2: '#1D9E75', resultColor: '#085041' },
+  self:    { color1: '#993C1D', color2: '#D85A30', resultColor: '#712B13' }
+};
+
+let domain = 'physics';
+let phaseOffset = 0;
+let freqRatio = 1.0;
+let noiseAmt = 0;
+let animFrame = 0;
+
+function setDomain(d) {
+  domain = d;
+  document.querySelectorAll('.domain-card').forEach(c => c.classList.remove('active-card'));
+  document.getElementById('card-'+d).classList.add('active-card');
+  draw();
+}
+
+function getNoise(amt) {
+  return (Math.random() - 0.5) * amt * 0.04;
+}
+
+function draw() {
+  const dom = domains[domain];
+  ctx.clearRect(0, 0, W, H);
+
+  const midY1 = 68, midY2 = 148, midYr = 228;
+  const amp = 28;
+  const pts = 400;
+  const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+  const gridCol = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)';
+  const textCol = dark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.3)';
+
+  ctx.strokeStyle = gridCol; ctx.lineWidth = 0.5;
+  [midY1, midY2, midYr].forEach(y => {
+    ctx.beginPath(); ctx.moveTo(40, y); ctx.lineTo(W-20, y); ctx.stroke();
+  });
+
+  ctx.font = '11px ' + getComputedStyle(document.body).fontFamily;
+  ctx.fillStyle = textCol;
+  ctx.fillText('wave A', 2, midY1 - 32);
+  ctx.fillText('wave B', 2, midY2 - 32);
+  ctx.fillText('result', 2, midYr - 32);
+
+  function drawWave(midY, freq, phase, color, noise) {
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    for (let i = 0; i <= pts; i++) {
+      const x = 40 + (i / pts) * (W - 60);
+      const t = (i / pts) * Math.PI * 8;
+      const n = noise ? getNoise(noiseAmt) : 0;
+      const y = midY - Math.sin(t * freq + phase + animFrame * 0.04) * amp + n * amp;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+
+  function drawResult(midY, color) {
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.5;
+    for (let i = 0; i <= pts; i++) {
+      const x = 40 + (i / pts) * (W - 60);
+      const t = (i / pts) * Math.PI * 8;
+      const n = noiseAmt ? getNoise(noiseAmt * 0.5) : 0;
+      const a = Math.sin(t + animFrame * 0.04);
+      const b = Math.sin(t * freqRatio + phaseOffset + animFrame * 0.04);
+      const sum = ((a + b) / 2) * amp + n * amp * 0.5;
+      const y = midY - sum;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+
+  drawWave(midY1, 1, 0, dom.color1, false);
+  drawWave(midY2, freqRatio, phaseOffset, dom.color2, true);
+  drawResult(midYr, dom.resultColor);
+
+  const phaseFactor = Math.abs(Math.cos(phaseOffset));
+  const freqDiff = Math.abs(freqRatio - 1.0);
+  const noiseFactor = noiseAmt / 60;
+  const coherence = Math.max(0, Math.round(phaseFactor * (1 - freqDiff * 3) * (1 - noiseFactor) * 100));
+  document.getElementById('cbar').style.width = coherence + '%';
+  document.getElementById('cbar').style.background = coherence > 60 ? '#185FA5' : coherence > 30 ? '#BA7517' : '#A32D2D';
+  document.getElementById('cval').textContent = coherence + '%';
+}
+
+function animate() {
+  animFrame++;
+  draw();
+  requestAnimationFrame(animate);
+}
+
+document.getElementById('phase').oninput = function() {
+  phaseOffset = this.value / 100;
+  const deg = Math.round(phaseOffset * 180 / Math.PI);
+  document.getElementById('phase-out').textContent = phaseOffset < 0.1 ? '0° (locked)' : deg < 100 ? deg + '° (drifting)' : deg + '° (inverted)';
+};
+
+document.getElementById('freq').oninput = function() {
+  freqRatio = this.value / 100;
+  document.getElementById('freq-out').textContent = freqRatio.toFixed(2) + '×';
+};
+
+document.getElementById('noise').oninput = function() {
+  noiseAmt = +this.value;
+  document.getElementById('noise-out').textContent = this.value;
+};
+
+animate();
+</script>
+</body>
+</html>
